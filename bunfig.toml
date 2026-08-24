@@ -1,0 +1,9 @@
+[install]
+# The Agent SDK ships its Claude Code binary through npm optionalDependencies
+# (one package per platform). Never install with optional deps omitted, or the
+# SDK has no binary to spawn and you must set `pathToClaudeCodeExecutable`.
+optional = true
+
+[test]
+# Labs keep their unit tests next to the code they cover.
+root = "."

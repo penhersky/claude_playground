@@ -1,0 +1,19 @@
+node_modules/
+
+# bun.lock IS committed — reproducible installs across machines.
+package-lock.json
+yarn.lock
+
+# Secrets — also denied in .claude/settings.json and blocked by the PreToolUse hook
+.env
+.env.*
+!.env.example
+
+# Personal, machine-local Claude Code config
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Lab output
+labs/**/.scratch/
+labs/**/out/
+*.log

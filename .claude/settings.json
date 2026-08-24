@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "permissions": {
+    "defaultMode": "default",
+
+    "allow": [
+      "Bash(bun run *)",
+      "Bash(bun test *)",
+      "Bash(bun install)",
+      "Bash(bunx tsc *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Read(/**)",
+      "Edit(/src/**)",
+      "Edit(/labs/**)",
+      "Edit(/docs/**)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:platform.claude.com)",
+      "WebFetch(domain:modelcontextprotocol.io)"
+    ],
+
+    "ask": [
+      "Edit(/.claude/settings.json)",
+      "Edit(/.mcp.json)",
+      "Edit(/package.json)",
+      "Bash(git push *)",
+      "Bash(git commit *)"
+    ],
+
+    "deny": [
+      "Read(/.env)",
+      "Read(/.env.*)",
+      "Edit(/.env)",
+      "Edit(/.env.*)",
+      "Bash(curl *)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(npm install *)",
+      "Bash(git push --force *)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-env-writes.sh",
+            "timeout": 10,
+            "statusMessage": "Checking write target..."
+          }
+        ]
+      }
+    ]
+  },
+
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS": "5"
+  }
+}
