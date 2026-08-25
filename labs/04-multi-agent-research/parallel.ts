@@ -16,6 +16,8 @@
  * to repartition the work, not to add more agents.
  */
 
+import { startRunLog } from "../../src/runtime/log.ts";
+import { summarizeTrace } from "../../src/runtime/print.ts";
 import { runAgent, SPAWN_TOOLS } from "../../src/runtime/run.ts";
 import { RESEARCH_AGENTS } from "./agents.ts";
 import { CORPUS_TOOLS, corpusServer, resetFailures } from "./failures.ts";
@@ -107,6 +109,7 @@ async function runMode(mode: "sequential" | "parallel") {
     // Agent calls the coordinator issued without waiting. In the parallel run
     // this should be one turn holding four; sequentially, four turns of one.
     spawnTurns: countSpawnTurns(trace.toolCalls),
+    trace: summarizeTrace(trace),
   };
 }
 
@@ -130,14 +133,18 @@ function countSpawnTurns(calls: { name: string; insideSubagent: boolean }[]): nu
 }
 
 async function main() {
+  const log = startRunLog({ dir: import.meta.dir, label: "parallel" });
+
   console.log("Measuring sequential vs. parallel subagent delegation.\n");
   console.log("Both runs do identical work. Only the delegation instruction differs.\n");
 
   console.log(`${"═".repeat(72)}\nSEQUENTIAL\n${"═".repeat(72)}\n`);
   const sequential = await runMode("sequential");
+  log.record(sequential);
 
   console.log(`\n${"═".repeat(72)}\nPARALLEL\n${"═".repeat(72)}\n`);
   const parallel = await runMode("parallel");
+  log.record(parallel);
 
   console.log(`\n${"═".repeat(72)}\nRESULTS\n${"═".repeat(72)}\n`);
   console.log("  mode        elapsed    cost      subagents   delegating turns");
@@ -151,6 +158,9 @@ async function main() {
 
   if (sequential.seconds > 0) {
     const speedup = sequential.seconds / parallel.seconds;
+    // The number the decision note asks for by name. Recording it means a run
+    // three weeks old still answers "what speedup did parallel delegation give".
+    log.metric("speedup", speedup);
     console.log(`\n  speedup: ${speedup.toFixed(2)}×`);
     console.log(
       speedup > 1.5
@@ -166,6 +176,8 @@ async function main() {
     "\n  Note: cost is roughly unchanged. Parallelism buys latency, not tokens —\n" +
       "  the same four subagents make the same four sets of requests either way.",
   );
+
+  log.close({ status: "ok" });
 }
 
 if (import.meta.main) await main();

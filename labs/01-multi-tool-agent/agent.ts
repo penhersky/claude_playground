@@ -7,6 +7,8 @@
  * printed tool trace; the interesting parts are the denials.
  */
 
+import { startRunLog } from "../../src/runtime/log.ts";
+import { summarizeTrace } from "../../src/runtime/print.ts";
 import { runAgent, SPAWN_TOOLS } from "../../src/runtime/run.ts";
 import { gateHooks, newGateState } from "./hooks/prerequisite-gate.ts";
 import { supportServer, SUPPORT_TOOLS } from "./tools/support-server.ts";
@@ -75,6 +77,8 @@ const scenarioC = [
 ].join(" ");
 
 async function main() {
+  const log = startRunLog({ dir: import.meta.dir, label: "agent" });
+
   const scenarios: [string, string][] = [
     ["A — prerequisite gate", scenarioA],
     ["B — policy ceiling → escalation", scenarioB],
@@ -116,7 +120,25 @@ async function main() {
     console.log(
       `  tools called: ${trace.toolCalls.map((c) => short(c.name)).join(" → ") || "(none)"}`,
     );
+
+    log.record({
+      scenario: label,
+      prompt,
+      gate: {
+        verifiedCustomerId: state.verifiedCustomerId,
+        blockedRefunds: state.blockedRefunds,
+      },
+      ...summarizeTrace(trace),
+      // Short names as printed, so a re-read doesn't need the mcp__support__
+      // prefix decoded. This is the field that answers "did the thin
+      // descriptions misroute, and on which prompt".
+      toolChainShort: trace.toolCalls
+        .filter((c) => !c.insideSubagent)
+        .map((c) => short(c.name)),
+    });
   }
+
+  log.close({ status: "ok" });
 }
 
 function short(toolName: string): string {

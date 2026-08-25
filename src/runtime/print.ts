@@ -44,6 +44,40 @@ export function emptyTrace(): RunTrace {
   };
 }
 
+/** A `RunTrace` flattened for the run-log sidecar. */
+export interface TraceSummary {
+  costUsd: number;
+  resultSubtype: string | undefined;
+  toolCallCount: number;
+  /** Ordered top-level tool names — the evidence for "what did it actually do". */
+  toolChain: string[];
+  subagentInvocations: string[];
+  deniedTools: string[];
+  resultText: string | undefined;
+}
+
+/**
+ * Flatten a trace for persistence.
+ *
+ * Lives here rather than in `log.ts` because it is the `RunTrace` shape's own
+ * business, and keeping it here means the log module needs no SDK knowledge.
+ *
+ * `toolChain` drops subagent-nested calls: it is the coordinator's own sequence,
+ * which is what `agent.ts` already prints and what answers "which prompt
+ * misrouted a tool" when you re-read a run.
+ */
+export function summarizeTrace(trace: RunTrace): TraceSummary {
+  return {
+    costUsd: trace.costUsd,
+    resultSubtype: trace.resultSubtype,
+    toolCallCount: trace.toolCalls.length,
+    toolChain: trace.toolCalls.filter((c) => !c.insideSubagent).map((c) => c.name),
+    subagentInvocations: [...trace.subagentInvocations],
+    deniedTools: [...trace.deniedTools],
+    resultText: trace.resultText,
+  };
+}
+
 /**
  * The subagent-spawning tool was renamed `Task` → `Agent` in Claude Code
  * v2.1.63. Current SDKs emit `"Agent"` in `tool_use` blocks but still use

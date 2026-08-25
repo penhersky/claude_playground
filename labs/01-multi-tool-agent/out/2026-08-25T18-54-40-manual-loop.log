@@ -1,0 +1,30 @@
+
+[iteration 1] stop_reason=tool_use  in=871 out=127
+  assistant: I'll start by verifying your account and pulling up that order.
+  → get_customer({"identifier":"ada@example.com"})
+  → lookup_order({"orderId":"ORD-5150"})  [error]
+
+[iteration 2] stop_reason=tool_use  in=1149 out=88
+  assistant: Your account is verified. The order lookup timed out — retrying now.
+  → lookup_order({"orderId":"ORD-5150"})
+
+[iteration 3] stop_reason=tool_use  in=1339 out=207
+  assistant: Everything checks out — delivered 20 days ago and still within the return window. Processing your refund.
+  → process_refund({"customerId":"CUS-1001","orderId":"ORD-5150","amountUsd":149,"reason":"Customer dissatisfied with switch feel; return within window"})
+
+[iteration 4] stop_reason=end_turn  in=1572 out=169
+  assistant: Done, Ada — your refund is processed. 🎉
+
+- **Order:** ORD-5150 — Meridian mechanical keyboard
+- **Refund amount:** $149.00
+- **Refund ID:** RFD-5150
+- **Status:** Processed
+
+The order was delivered 20 days ago, comfortably inside the return window, so no issues there. Refunds typically post back to your original payment method within 3–5 business days.
+
+Anything else I can help with — such as recommendations for a keyboard with a different switch type?
+
+── end_turn: the model considers the task complete ──
+
+verified customer: CUS-1001
+iterations: 4

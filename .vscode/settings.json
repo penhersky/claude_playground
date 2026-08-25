@@ -1,0 +1,10 @@
+{
+  // Use the TypeScript pinned in package.json (5.9.3), not VS Code's bundled
+  // copy and not any global install. This repo's tsconfig uses
+  // `moduleResolution: "bundler"`, `allowImportingTsExtensions`, and
+  // `verbatimModuleSyntax` — all TS 5.0+. An older compiler cannot parse
+  // bun-types, so `import.meta.dir` silently degrades to
+  // "Property 'dir' does not exist on type 'ImportMeta'".
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

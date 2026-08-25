@@ -8,6 +8,8 @@
  * error handling and information flow.
  */
 
+import { startRunLog } from "../../src/runtime/log.ts";
+import { summarizeTrace } from "../../src/runtime/print.ts";
 import { runAgent, SPAWN_TOOLS } from "../../src/runtime/run.ts";
 import { RESEARCH_AGENTS, AGENT_TOPICS } from "./agents.ts";
 import { CORPUS_TOOLS, corpusServer, resetFailures } from "./failures.ts";
@@ -89,6 +91,7 @@ const COORDINATOR_PROMPT = [
 ].join("\n");
 
 async function main() {
+  const log = startRunLog({ dir: import.meta.dir, label: "coordinator" });
   resetFailures();
   const trimStats = newTrimStats();
 
@@ -160,15 +163,22 @@ async function main() {
   // The specific checks this corpus was built to make observable.
   const report = trace.resultText ?? "";
   console.log("\nSynthesis checks:");
-  check(report, "both curtailment figures present", /4\.1/.test(report) && /6\.8/.test(report));
-  check(report, "the 2024/2026 capacity pair kept as a trend", /1,?240/.test(report) && /2,?870/.test(report));
-  check(report, "methodology difference explained", /methodolog|network-constrained|scope/i.test(report));
-  check(report, "sources attributed inline", /Helios/i.test(report) && /Transmission Authority|Grid Operator/i.test(report));
-  check(report, "contested section distinct from established", /contest|disput|disagree/i.test(report));
+  const synthesisChecks = [
+    check(report, "both curtailment figures present", /4\.1/.test(report) && /6\.8/.test(report)),
+    check(report, "the 2024/2026 capacity pair kept as a trend", /1,?240/.test(report) && /2,?870/.test(report)),
+    check(report, "methodology difference explained", /methodolog|network-constrained|scope/i.test(report)),
+    check(report, "sources attributed inline", /Helios/i.test(report) && /Transmission Authority|Grid Operator/i.test(report)),
+    check(report, "contested section distinct from established", /contest|disput|disagree/i.test(report)),
+  ];
+
+  log.record({ runId, elapsedSeconds: Number(elapsed), trimStats, ...summarizeTrace(trace) });
+  log.metric("synthesisChecks", synthesisChecks);
+  log.close({ status: synthesisChecks.every((c) => c.passed) ? "ok" : "failed" });
 }
 
-function check(_report: string, label: string, passed: boolean): void {
+function check(_report: string, label: string, passed: boolean): { label: string; passed: boolean } {
   console.log(`  ${passed ? "✓" : "✗"} ${label}`);
+  return { label, passed };
 }
 
 // Only run when executed directly. Tests import named helpers from this

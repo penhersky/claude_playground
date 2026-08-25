@@ -9,12 +9,14 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { requireApiKey } from "../../src/config/env.ts";
+import { startRunLog } from "../../src/runtime/log.ts";
 import { extract, extractMetadataForced, extractViaAnyTool } from "./extract.ts";
 import { FIXTURES, type Fixture } from "./fixtures/index.ts";
 import { auditNullFields, buildRetryPrompt, classify, MAX_ATTEMPTS } from "./retry.ts";
 import {
   accuracyByDocType,
   accuracyByField,
+  CONFIDENCE_THRESHOLD,
   prioritize,
   route,
   type RoutingDecision,
@@ -89,6 +91,7 @@ async function processFixture(client: Anthropic, fixture: Fixture): Promise<Outc
 }
 
 async function main() {
+  const log = startRunLog({ dir: import.meta.dir, label: "pipeline" });
   requireApiKey();
   const client = new Anthropic();
   const outcomes: Outcome[] = [];
@@ -133,6 +136,20 @@ async function main() {
         `  cache hits: ${outcome.cacheReadTokens} tok`,
     );
     console.log();
+
+    log.record({
+      id: fixture.id,
+      docType: fixture.docType,
+      attempts: outcome.attempts,
+      codes,
+      expectedCodes: expected,
+      matched,
+      passed: outcome.passed,
+      absentFieldsExpected: fixture.expect.absentFields,
+      absentFieldsCorrect: correctlyNull.length,
+      routing: outcome.routing,
+      cacheReadTokens: outcome.cacheReadTokens,
+    });
   }
 
   // ── Segment accuracy (Task 5.5) ─────────────────────────────────────────
@@ -157,7 +174,8 @@ async function main() {
   }
 
   console.log("\nBy field confidence:");
-  for (const segment of accuracyByField(outcomes.map((o) => o.extraction))) {
+  const byField = accuracyByField(outcomes.map((o) => o.extraction));
+  for (const segment of byField) {
     console.log(
       `  ${segment.segment.padEnd(18)} ${pct(segment.accuracy).padStart(6)}  (${segment.passed}/${segment.total} above threshold)`,
     );
@@ -195,6 +213,17 @@ async function main() {
 
   const forced = await extractMetadataForced(client, statement.text);
   console.log(`  forced extract_metadata → ${JSON.stringify(forced)}`);
+
+  // The threshold goes in the file so each run is self-describing. Comparing
+  // `byField` across two runs at different thresholds *is* the caught-errors
+  // against review-volume curve the decision note asks for.
+  log.metric("confidenceThreshold", CONFIDENCE_THRESHOLD);
+  log.metric("overallAccuracy", byType.overall);
+  log.metric("byDocType", byType.segments);
+  log.metric("worstSegment", byType.worst);
+  log.metric("byField", byField);
+  log.metric("reviewQueue", queue);
+  log.close({ status: "ok" });
 }
 
 function pct(value: number): string {

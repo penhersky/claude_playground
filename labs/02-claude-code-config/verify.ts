@@ -15,6 +15,7 @@
 
 import { query, resolveSettings } from "@anthropic-ai/claude-agent-sdk";
 import { MODEL, requireApiKey, subprocessEnv } from "../../src/config/env.ts";
+import { startRunLog } from "../../src/runtime/log.ts";
 
 const EXPECTED_SKILLS = ["exam-drill", "domain-review", "sdk-doc", "new-lab"];
 const EXPECTED_COMMANDS = ["study-plan"];
@@ -66,6 +67,7 @@ async function readInitMessage(): Promise<Record<string, any> | null> {
 }
 
 async function main() {
+  const log = startRunLog({ dir: import.meta.dir, label: "verify" });
   requireApiKey();
 
   console.log("Verifying .claude/ configuration…\n");
@@ -73,6 +75,9 @@ async function main() {
 
   if (!init) {
     console.error("No system:init message arrived. The session never started.");
+    // A session that never started is exactly the run worth re-reading, so
+    // close explicitly rather than letting the exit handler default it.
+    log.close({ status: "failed" });
     process.exit(1);
   }
 
@@ -165,6 +170,10 @@ async function main() {
       "Claude reads a matching file, so they never appear in system:init. Verify\n" +
       "them by hand — see the README.",
   );
+
+  // Before process.exit — it does not flush anything still pending.
+  log.record({ checks, failed, skills, commands, mcpServers: servers });
+  log.close({ status: failed === 0 ? "ok" : "failed" });
 
   process.exit(failed === 0 ? 0 : 1);
 }

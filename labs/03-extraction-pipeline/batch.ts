@@ -20,6 +20,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { MODEL, requireApiKey } from "../../src/config/env.ts";
+import { startRunLog } from "../../src/runtime/log.ts";
 import { SYSTEM_PROMPT } from "./fewshot.ts";
 import { FIXTURES, fixtureById } from "./fixtures/index.ts";
 import { ExtractionSchema, type Extraction } from "./schema.ts";
@@ -204,6 +205,10 @@ export function submissionIntervalHours(slaHours: number, batchWorstCaseHours = 
 }
 
 async function main() {
+  // Inside main(), never at module scope: pipeline.test.ts imports
+  // submissionIntervalHours from this file, and `bun test` must stay free of
+  // filesystem side effects.
+  const log = startRunLog({ dir: import.meta.dir, label: "batch" });
   requireApiKey();
   const client = new Anthropic();
 
@@ -224,10 +229,13 @@ async function main() {
     console.log(`  ${outcome.customId.padEnd(22)} ${outcome.status.padEnd(10)} ${outcome.note}`);
   }
 
+  log.record({ pass: 1, batchId: first.id, outcomes });
+
   // Pass 2 — only the failures, keyed by custom_id, with modifications.
   const toResubmit = outcomes.filter((o) => o.resubmit !== false);
   if (toResubmit.length === 0) {
     console.log("\nNothing to resubmit.");
+    log.close({ status: "ok" });
     return;
   }
 
@@ -262,6 +270,11 @@ async function main() {
         "the same document means the problem is the document, not the attempt.",
     );
   }
+
+  log.record({ pass: 2, batchId: second.id, outcomes: retryOutcomes });
+  log.metric("resolvedOnSecondPass", retryOutcomes.length - stillFailing.length);
+  log.metric("stillFailing", stillFailing.map((o) => o.customId));
+  log.close({ status: stillFailing.length === 0 ? "ok" : "failed" });
 }
 
 function chunk(text: string, size: number): string[] {

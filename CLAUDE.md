@@ -52,6 +52,15 @@ architecture the exam asks for.
 **Every agent entrypoint sets `maxBudgetUsd`.** Don't remove it. Raise it
 deliberately and say why.
 
+**Every run persists to `labs/<lab>/out/`.** `startRunLog()` from
+`src/runtime/log.ts` writes an ANSI-stripped transcript plus a JSON sidecar
+carrying cost, tool chain, and the lab's own numbers — so a decision note
+written a week later can cite them. Call it as the first line of `main()`,
+never at module scope: `bun test` imports some entrypoints for their pure
+helpers and must stay free of filesystem side effects. Off with `LAB_LOG=0`;
+relocate with `LAB_LOG_DIR`. The tee is not a second message printer — it
+formats nothing and sits underneath `print.ts`.
+
 **Labs are teaching artifacts.** When a lab contains a deliberate anti-pattern
 for contrast — like `tools/descriptions.before.md` in lab 1 — it is labelled as
 such. Don't "fix" it. Do fix accidental ones.

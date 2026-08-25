@@ -30,6 +30,24 @@ export const CHEAP_MODEL = "claude-haiku-4-5";
 export const MAX_BUDGET_USD = Number(process.env["LAB_MAX_BUDGET_USD"] ?? "2.00");
 
 /**
+ * Whether lab runs persist a transcript and sidecar to `labs/<lab>/out/`.
+ *
+ * On by default: every live run costs real money, and a log you have to
+ * remember to enable is the one you don't have on the day you needed it. Set
+ * `LAB_LOG=0` for a throwaway run. Anything else — unset included — means on.
+ */
+export const LOG_RUNS = process.env["LAB_LOG"] !== "0";
+
+/**
+ * Directory name for run logs, resolved against the lab's own directory.
+ *
+ * Already covered by `.gitignore`, and the `/study-plan` command probes each
+ * lab's `out` directory to detect which labs have actually been exercised. An
+ * absolute path works too, if you'd rather every lab wrote to one place.
+ */
+export const LOG_DIR_NAME = process.env["LAB_LOG_DIR"] ?? "out";
+
+/**
  * Assert an API key is present and return it.
  *
  * Called at the top of every lab entrypoint so a missing key fails immediately

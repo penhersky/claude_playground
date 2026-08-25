@@ -15,7 +15,9 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+
+    "types": ["bun", "node"]
   },
   "include": ["src/**/*.ts", "labs/**/*.ts"],
   "exclude": ["node_modules"]

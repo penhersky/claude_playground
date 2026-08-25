@@ -12,8 +12,3 @@ yarn.lock
 # Personal, machine-local Claude Code config
 .claude/settings.local.json
 CLAUDE.local.md
-
-# Lab output
-labs/**/.scratch/
-labs/**/out/
-*.log
