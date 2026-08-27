@@ -1,0 +1,83 @@
+
+════════════════════════════════════════════════════════════════════════
+A — prerequisite gate
+════════════════════════════════════════════════════════════════════════
+
+user: Hi, I want to return the keyboard from order ORD-5150. It arrived fine, I just don't like the switches. Can you refund me the $149? I'm Ada Okafor.
+
+── session init ──
+  model:    claude-sonnet-5
+  skills:   domain-review, exam-drill, new-lab, sdk-doc, design, design-sync, dataviz, artifact-design, artifact-diagramming, artifact-capabilities, update-config, verify, debug, code-review, simplify, batch, fewer-permission-prompts, doctor, loop, schedule, claude-api, run, run-skill-generator
+  commands: domain-review, exam-drill, new-lab, sdk-doc, study-plan, design, design-sync, dataviz, artifact-design, artifact-diagramming, artifact-capabilities, update-config, verify, debug, code-review, simplify, batch, fewer-permission-prompts, doctor, loop, schedule, claude-api, run, run-skill-generator, agents, auto-mode-setup, autocompact, clear, color, compact, config, context, effort, fast, heapdump, init, mcp, import, model, __remote-workflow, workflow-launch-exec, reload-skills, rename, ultrareview, security-review, usage-credits, extra-usage, usage, insights, recap, goal, design-consent, design-revoke, list-agents, team-onboarding
+  mcp:      docs=pending, github=pending, support=connected
+
+→ mcp__support__get_customer {"identifier":"Ada Okafor"}
+→ mcp__support__lookup_order {"orderId":"ORD-5150"}
+→ mcp__support__lookup_order {"orderId":"ORD-5150"}
+Order verified, and it's within the return window (delivered 20 days ago). Processing your refund now.
+→ mcp__support__process_refund {"customerId":"CUS-1001","orderId":"ORD-5150","amountUsd":149,"reason":"Customer return - keyboard arrived fine but did not like the switches, within return window"}
+Hi Ada, all set! Your refund of **$149** for the Meridian mechanical keyboard (ORD-5150) has been processed (Refund ID: RFD-5150). It should settle back to your original payment method within about 5 days. No need to worry about the switches not being your thing — glad we could sort it quickly!
+
+── success ──  $0.2342  5 turns
+
+  gate: verified=CUS-1001  blocked refunds=0
+  tools called: get_customer → lookup_order → lookup_order → process_refund
+
+════════════════════════════════════════════════════════════════════════
+B — policy ceiling → escalation
+════════════════════════════════════════════════════════════════════════
+
+user: This is ada@example.com. The Aurora monitor from ORD-4417 has a dead pixel column. I want the full $780 back.
+
+→ mcp__support__get_customer {"identifier":"ada@example.com"}
+→ mcp__support__lookup_order {"orderId":"ORD-4417"}
+I've verified your identity, Ada, and looked into ORD-4417.
+
+**What I found:** Your Aurora 27-inch monitor ($780) was delivered on 2026-07-06 — 45 days ago. Our standard return window has passed, so I'm not able to process a standard refund on this order directly.
+
+**However**, since you're describing a manufacturing defect (a dead pixel column) rather than a change of mind, this isn't really a standard "return window" situation — it's a product defect claim, and our policy doesn't give me clear guidance on defect-based exceptions after the window closes. Rather than deny this outright, I'm going to hand this to a human agent who can evaluate the defect claim and approve an exception if warranted.
+
+I'll escalate this now with everything on file so you don't have to repeat yourself.
+→ mcp__support__escalate_to_human {"customerId":"CUS-1001","orderId":"ORD-4417","rootCause":"Customer reports a manufacturing defect (dead pixel column) on Aurora 27-inch monitor, ORD-4417, $780, delivered 2026-07-06 (45 days ago). Order is outside the standard return windo…
+I've escalated this to our tier-2 resolutions team — ticket **ESC-55983**.
+
+**Summary for you:**
+- Your order (ORD-4417, Aurora monitor, $780) is technically outside our standard 30-day return window (45 days since delivery).
+- Since you're reporting a dead pixel column defect rather than a simple return, I've flagged this as a defect claim for a specialist to review, rather than denying it outright.
+- A human agent will evaluate and can approve the full $780 refund or a replacement if the defect is confirmed.
+
+A few tips to speed things up when they reach out: having a photo of the dead pixel column ready will help support your claim. You should hear back soon on ticket ESC-55983 — let me know if there's anything else I can help with in the meantime.
+
+── success ──  $0.2236  4 turns
+
+  gate: verified=CUS-1001  blocked refunds=0
+  tools called: get_customer → lookup_order → escalate_to_human
+
+════════════════════════════════════════════════════════════════════════
+C — multi-concern + business error
+════════════════════════════════════════════════════════════════════════
+
+user: Two things. First, the desk lamp from ORD-3902 broke — I'd like money back. Second, where is ORD-6001? Also I think you have two accounts under Okafor, which one am I?
+
+→ mcp__support__get_customer {"identifier":"penxerscky@gmail.com"}
+→ mcp__support__get_customer {"identifier":"Okafor"}
+→ mcp__support__lookup_order {"orderId":"ORD-3902"}
+→ mcp__support__lookup_order {"orderId":"ORD-6001"}
+Here's what I found on each of your questions:
+
+**1. Desk lamp refund (ORD‑3902):** This order (Halcyon desk lamp, $89) was delivered on 2026‑02‑15 — that's 186 days ago, well outside our return/refund window. I'm not able to process a refund for it on that basis. If you feel there are special circumstances (e.g., a warranty issue rather than a standard return), let me know and I can escalate that for a policy exception review.
+
+**2. ORD‑6001 status:** This order (Ridgeline backpack, $120) is currently **in transit** — it hasn't been delivered yet, so there's nothing to return/refund on it at this time.
+
+**3. Which "Okafor" account is yours:** I do see two accounts under that name — Ada Okafor (CUS‑1001) and Ben Okafor (CUS‑1002) — but I can't determine which is you from a name alone, and I don't have a verified match for your email address either. Interestingly, the two order numbers you gave me point to *different* customer accounts (ORD‑3902 → CUS‑1002, ORD‑6001 → a third account, CUS‑1003, which isn't even one of the Okafor accounts). That could mean these orders belong to different people, or possibly a household/shared account situation.
+
+To verify your identity properly and avoid mixing up accounts, could you give me either:
+- the email address on your account, or
+- your customer ID (format CUS‑XXXX)?
+
+Once I have that, I can confirm your account and take any further action you need (including looking into the return-window exception for the lamp, if applicable).
+
+── success ──  $0.2458  5 turns
+
+  gate: verified=none  blocked refunds=0
+  tools called: get_customer → get_customer → lookup_order → lookup_order

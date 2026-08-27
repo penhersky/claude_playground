@@ -133,15 +133,45 @@ export function recordToolResult(
   }
 }
 
+/**
+ * Normalize a tool result into the JSON object it carries.
+ *
+ * `PostToolUseHookInput.tool_response` is typed `unknown`, and its runtime
+ * shape is not what the MCP spec's `CallToolResult` suggests. For an SDK MCP
+ * tool it arrives as a **bare array of content blocks**, with no `content`
+ * wrapper:
+ *
+ *   [{ type: "text", text: "{\"verified\":true,\"customerId\":\"CUS-1001\"}" }]
+ *
+ * Reading `result.content[0].text` therefore found nothing and the gate never
+ * verified anyone — silently, because every failure path here returns `null`.
+ * Both forms are accepted now, along with an already-parsed object and a raw
+ * JSON string, since no type guarantees which one arrives.
+ */
 function coerceResult(result: unknown): Record<string, any> | null {
+  if (typeof result === "string") return safeParse(result);
+  if (Array.isArray(result)) return fromContentBlocks(result);
+
   if (result && typeof result === "object") {
     const obj = result as Record<string, any>;
-    // MCP results arrive as a content array; the JSON is in the first text block.
-    const text = obj["content"]?.[0]?.text;
-    if (typeof text === "string") return safeParse(text);
+    const content = obj["content"];
+    if (Array.isArray(content)) return fromContentBlocks(content);
+    if (typeof content === "string") return safeParse(content);
+    // Already a plain result object.
     return obj;
   }
-  if (typeof result === "string") return safeParse(result);
+  return null;
+}
+
+/** First text block that parses as a JSON object wins. */
+function fromContentBlocks(blocks: unknown[]): Record<string, any> | null {
+  for (const block of blocks) {
+    if (!block || typeof block !== "object") continue;
+    const text = (block as Record<string, any>)["text"];
+    if (typeof text !== "string") continue;
+    const parsed = safeParse(text);
+    if (parsed) return parsed;
+  }
   return null;
 }
 

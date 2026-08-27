@@ -86,6 +86,55 @@ describe("prerequisite gate (Task 1.4)", () => {
     );
   });
 
+  test("verifies from the bare content-block array the SDK actually sends", () => {
+    // The shape observed live from PostToolUseHookInput.tool_response: an array
+    // of content blocks with NO `content` wrapper. Reading result.content[0]
+    // found nothing here, so the gate denied every refund and scenario A
+    // escalated a $149 return it should have processed. The other tests in this
+    // file all used the wrapped shape, which is why they stayed green.
+    const state = newGateState();
+    recordToolResult(
+      GET_CUSTOMER,
+      [
+        {
+          type: "text",
+          text: JSON.stringify({
+            verified: true,
+            customerId: "CUS-1001",
+            name: "Ada Okafor",
+            tier: "priority",
+          }),
+        },
+      ],
+      state,
+    );
+
+    expect(state.verifiedCustomerId).toBe("CUS-1001");
+    expect(evaluateGate(REFUND, { customerId: "CUS-1001", amountUsd: 149 }, state).decision).toBe(
+      "allow",
+    );
+  });
+
+  test("an ambiguous result in the bare-array shape still verifies nobody", () => {
+    const state = newGateState();
+    recordToolResult(
+      GET_CUSTOMER,
+      [{ type: "text", text: JSON.stringify({ verified: false, reason: "multiple_matches" }) }],
+      state,
+    );
+
+    expect(state.verifiedCustomerId).toBeNull();
+  });
+
+  test("a non-JSON or empty tool_response leaves the gate closed", () => {
+    // Failing closed is the safe direction, but it must not throw.
+    for (const junk of [[], [{ type: "text", text: "not json" }], null, undefined, 42]) {
+      const state = newGateState();
+      recordToolResult(GET_CUSTOMER, junk, state);
+      expect(state.verifiedCustomerId).toBeNull();
+    }
+  });
+
   test("leaves non-gated tools alone", () => {
     const state = newGateState();
     expect(evaluateGate("mcp__support__lookup_order", { orderId: "ORD-5150" }, state).decision).toBe(
